@@ -1,0 +1,137 @@
+---
+title: "Naive Bayes Classifier"
+author: "Matthew Michael Collins"
+date: "5/1/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Models Utilized
+
+Data mining with Naive Bayes 
+
+## Naiive Bayes: Reading in Data
+
+```{r warning=FALSE}
+
+# Loading package
+library(e1071)
+library(caTools)
+library(caret)
+
+set.seed(100)
+train<-read.csv(file = 'training_final.csv', header=TRUE)
+test<-read.csv(file = 'test_final.csv', header=TRUE)
+
+train[,13]<-as.factor(train[,13])
+y_test<-as.factor(train[,13])
+x_test<-test
+
+
+```
+
+<newline>
+
+## Selection 
+I chose  sig1, sig2, sig7 and sig8 becuase the data when plotted shows two kinds distribution: unifrom and right skewed.
+
+## Data preprocesing
+This function removes all the NA rows from the dataset. This function also finds the outlying data and removes it from the set. 
+```{r}
+for (i in which(sapply(train, is.numeric))) {
+  train[is.na(train[, i]), i] <- mean(train[, i],  na.rm = TRUE)
+}
+
+#install.packages("outliers")
+library(outliers)
+
+outlier_tf = outlier(train$sig1,logical=TRUE)
+
+#What were the outliers
+find_outlier = which(outlier_tf==TRUE,arr.ind=TRUE)
+
+sum(outlier_tf)
+
+train = train[-find_outlier,]
+nrow(train)
+```
+
+## Data Transformation
+Generate a random sample of "data_set_size" indexes and then Assign the data to a new training set
+
+```{r}
+new_train = data.frame(sig1 = train$sig1,
+                       sig2 = train$sig2,
+                       sig7= train$sig7,
+                       sig8= train$sig8)
+data_set_size <- round(nrow(new_train)/2)
+indexes <- sample(1:nrow(new_train), size = data_set_size) 
+train2 <- new_train[indexes,]
+```
+## Plots of sig1, sig2, sig7 and sig8
+
+```{r , echo=FALSE, fig.width = 6, fig.height=4}
+plot(as.factor(train[,5]))
+title(main="Value Occurence sig1", xlab="Values", ylab="Occurence")
+
+plot(as.factor(train[,6]))
+title(main="Value Occurence sig2", xlab="Values", ylab="Occurence")
+
+plot(as.factor(train[,11]))
+title(main="Value Occurence sig7", xlab="Values", ylab="Occurence")
+
+plot(as.factor(train[,12]))
+title(main="Value Occurence sig8", xlab="Values", ylab="Occurence")
+
+```
+
+Note that each of these values is uniform distribution or right skewed data.
+
+## Misclasification of the Train Data
+```{r warning=FALSE}
+
+fit<-naiveBayes(relevance~.,data=train)
+answer<-predict(fit,train2)
+sum(train[,13]!=answer)/length(train[,13])
+```
+## Success Rate Train Data
+```{r warning = FALSE}
+mean(answer==train[,13])
+```
+## Final Misclasification Against Test Data
+```{r warning=FALSE}
+answer2<-predict(fit,x_test)
+sum(train[,13]!=answer2)/length(train[,13])
+```
+## Final Success Rate Against Test Data
+```{r warning = FALSE}
+mean(answer2==train[,13])
+```
+
+## 4. Data Mining 
+I chose Naiive Bayes because it is a simple technique for constructing classifiers. Bayes classifiers also treat each value of a particular feature as independent of the value of any other feature.
+
+## Interpretation/Evaluation Misclassification Error on Training 
+Using sig2 through sig8 because they are both uniform distribution
+
+```{r warning=FALSE}
+fit2<-naiveBayes(relevance~.,data=train)
+answer<-predict(fit2,train2[,2:4])
+sum(train[,13]!=answer)/length(train[,13])
+````
+## Misclassification With sig1 
+```{r warning=FALSE}
+fit3<-naiveBayes(relevance~.,data=train)
+answer<-predict(fit3,train2[,1])
+sum(train[,13]!=answer)/length(train[,13])
+````
+## Final Thoughts 
+Using data with similar distribution results in better classification with the model.
+
+## Write to .txt
+```{r}
+write(answer2, file="answer.txt",ncol=1)
+```
